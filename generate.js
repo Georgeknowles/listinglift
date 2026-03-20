@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 export const config = { runtime: 'edge' };
 
 export default async function handler(req) {
@@ -6,6 +8,22 @@ export default async function handler(req) {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SECRET_KEY
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
     const body = await req.json();
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
