@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ListingLift — AI Marketing Package Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #B8975A; --gold-light: #F5EDD8; --gold-dark: #8B6F3A;
+    --dark: #1A1814; --dark-2: #2A2520; --mid: #5C554A;
+    --light: #F9F5EE; --white: #FFFFFF; --border: rgba(184,151,90,0.25);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
+  header { background: var(--dark); padding: 1.5rem 2rem; display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 36px; height: 36px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 18px; color: var(--dark); font-weight: 700; }
+  .logo-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--white); font-weight: 400; letter-spacing: 0.02em; }
+  .logo-text span { color: var(--gold); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .user-email { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .signout-btn { background: none; border: 1px solid rgba(184,151,90,0.3); color: rgba(255,255,255,0.5); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 5px 12px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+  .signout-btn:hover { border-color: var(--gold); color: var(--gold); }
+  main { max-width: 900px; margin: 0 auto; padding: 2.5rem 2rem; }
+  .hero { text-align: center; margin-bottom: 2.5rem; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 400; line-height: 1.2; margin-bottom: 0.75rem; }
+  .hero h1 em { color: var(--gold-dark); font-style: italic; }
+  .hero p { color: var(--mid); font-size: 15px; font-weight: 300; }
+  .input-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+  .input-card h2 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 500; margin-bottom: 0.4rem; }
+  .input-card > p { font-size: 13px; color: var(--mid); margin-bottom: 1.25rem; font-weight: 300; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); }
+  input, select, textarea { font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark); background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; outline: none; transition: border-color 0.15s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); background: var(--white); }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+  .generate-btn { width: 100%; padding: 14px; background: var(--dark); color: var(--gold); border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 1.5rem; }
+  .generate-btn:hover { background: var(--dark-2); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(184,151,90,0.3); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { display: none; }
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .results-header h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 400; }
+  .badge { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-dark); background: var(--gold-light); padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+  .output-grid { display: grid; gap: 1.25rem; }
+  .output-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .output-card-header { background: var(--dark); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .output-card-header .label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+  .copy-btn { background: none; border: 1px solid rgba(184,151,90,0.35); color: rgba(255,255,255,0.6); font-family: 'DM Sans', sans-serif; font-size: 11px; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .output-body { padding: 1.25rem 1.5rem; font-size: 14px; line-height: 1.75; color: var(--dark); white-space: pre-wrap; font-weight: 300; }
+  .social-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .social-item { padding: 1rem 1.25rem; border-right: 1px solid var(--border); font-size: 13px; line-height: 1.7; color: var(--dark); font-weight: 300; }
+  .social-item:last-child { border-right: none; }
+  .social-platform { font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-dark); margin-bottom: 8px; }
+  .error-msg { background: #fff0f0; border: 1px solid #ffd0d0; border-radius: 8px; padding: 1rem 1.25rem; color: #c0392b; font-size: 14px; margin-top: 1rem; display: none; }
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .social-grid { grid-template-columns: 1fr; }
+    .social-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .social-item:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-mark">L</div>
+  <div class="logo-text">Listing<span>Lift</span></div>
+  <div class="header-right">
+    <span class="user-email" id="userEmail"></span>
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Turn property details into a<br><em>complete marketing package</em></h1>
+    <p>Paste in your listing notes and get MLS copy, social captions, and buyer emails — instantly.</p>
+  </div>
+
+  <div class="input-card">
+    <h2>Property Details</h2>
+    <p>Fill in what you know. The more detail you provide, the better the copy.</p>
+    <div class="grid-2">
+      <div class="field"><label>Address / Neighborhood</label><input type="text" id="address" placeholder="e.g. 42 Maple St, Westfield" /></div>
+      <div class="field"><label>List Price</label><input type="text" id="price" placeholder="e.g. $549,000" /></div>
+      <div class="field"><label>Bedrooms / Bathrooms</label><input type="text" id="beds" placeholder="e.g. 4 bed / 2.5 bath" /></div>
+      <div class="field"><label>Square Footage</label><input type="text" id="sqft" placeholder="e.g. 2,200 sq ft" /></div>
+      <div class="field">
+        <label>Property Type</label>
+        <select id="type">
+          <option value="single-family home">Single Family Home</option>
+          <option value="condo">Condo</option>
+          <option value="townhouse">Townhouse</option>
+          <option value="luxury estate">Luxury Estate</option>
+          <option value="investment property">Investment Property</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tone / Style</label>
+        <select id="tone">
+          <option value="professional and warm">Professional & Warm</option>
+          <option value="luxury and aspirational">Luxury & Aspirational</option>
+          <option value="friendly and conversational">Friendly & Conversational</option>
+          <option value="investment-focused">Investment Focused</option>
+        </select>
+      </div>
+      <div class="field full"><label>Key Features & Highlights</label><textarea id="features" placeholder="e.g. Newly renovated kitchen with quartz counters, hardwood floors throughout, oversized backyard with deck, attached 2-car garage, close to top-rated schools..."></textarea></div>
+    </div>
+    <button class="generate-btn" id="generateBtn" onclick="generatePackage()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btnText">Generate Marketing Package</span>
+    </button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-header">
+      <h2>Your Marketing Package</h2>
+      <div class="badge">Ready to use</div>
+    </div>
+    <div class="output-grid" id="outputGrid"></div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = '__SUPABASE_URL__';
+  const SUPABASE_KEY = '__SUPABASE_PUBLISHABLE_KEY__';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentSession = null;
+
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (!session) { window.location.href = '/'; return; }
+    currentSession = session;
+    document.getElementById('userEmail').textContent = session.user.email;
+  });
+
+  async function signOut() {
+    await sb.auth.signOut();
+    window.location.href = '/';
+  }
+
+  async function generatePackage() {
+    const features = document.getElementById('features').value;
+    if (!features.trim()) return showError('Please add some key features.');
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = '/'; return; }
+
+    const address = document.getElementById('address').value;
+    const price = document.getElementById('price').value;
+    const beds = document.getElementById('beds').value;
+    const sqft = document.getElementById('sqft').value;
+    const type = document.getElementById('type').value;
+    const tone = document.getElementById('tone').value;
+
+    setLoading(true);
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
+
+    const prompt = `You are an expert real estate copywriter. Based on the property details below, generate a complete marketing package. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation.
+
+Property type: ${type}
+Address/neighborhood: ${address || 'not specified'}
+Price: ${price || 'not specified'}
+Beds/baths: ${beds || 'not specified'}
+Square footage: ${sqft || 'not specified'}
+Key features: ${features}
+Desired tone: ${tone}
+
+Return this exact JSON structure:
+{
+  "headline": "A punchy 8-12 word headline for this property",
+  "tagline": "A short 5-7 word evocative tagline",
+  "mls_description": "A compelling 120-150 word MLS listing description. Professional, vivid, no fluff.",
+  "email_to_buyers": "A 80-100 word email to send to buyer leads announcing this listing. Conversational, creates urgency.",
+  "instagram": "An Instagram caption with emojis, 60-80 words, ends with 3-5 relevant hashtags.",
+  "facebook": "A Facebook post, 70-90 words, warm and community-focused.",
+  "linkedin": "A LinkedIn post, 60-80 words, professional tone for investor or relocation audience."
+}`;
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+      });
+
+      const data = await response.json();
+      if (data.error) return showError('Generation failed. Please try again.');
+      const text = data.content.map(i => i.text || '').join('');
+      const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+      renderResults(result);
+    } catch (err) {
+      showError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function setLoading(on) {
+    document.getElementById('generateBtn').disabled = on;
+    document.getElementById('spinner').style.display = on ? 'block' : 'none';
+    document.getElementById('btnText').textContent = on ? 'Generating your package...' : 'Generate Marketing Package';
+  }
+
+  function renderResults(r) {
+    const grid = document.getElementById('outputGrid');
+    grid.innerHTML = '';
+
+    const heroCard = document.createElement('div');
+    heroCard.className = 'output-card';
+    heroCard.innerHTML = `
+      <div class="output-card-header"><div class="label">Headline & Tagline</div><button class="copy-btn" onclick="copyText('${escapeAttr(r.headline+'\n'+r.tagline)}',this)">Copy</button></div>
+      <div class="output-body" style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:500;padding:1.5rem;">
+        ${escapeHtml(r.headline)}
+        <div style="font-size:0.85rem;color:var(--mid);font-family:'DM Sans',sans-serif;margin-top:6px;font-weight:300;font-style:italic;">${escapeHtml(r.tagline)}</div>
+      </div>`;
+    grid.appendChild(heroCard);
+
+    addCard(grid, 'MLS Listing Description', r.mls_description);
+    addCard(grid, 'Email to Buyer Leads', r.email_to_buyers);
+
+    const socialCard = document.createElement('div');
+    socialCard.className = 'output-card';
+    socialCard.innerHTML = `
+      <div class="output-card-header"><div class="label">Social Media Captions</div><button class="copy-btn" onclick="copyText('${escapeAttr('INSTAGRAM:\n'+r.instagram+'\n\nFACEBOOK:\n'+r.facebook+'\n\nLINKEDIN:\n'+r.linkedin)}',this)">Copy All</button></div>
+      <div class="social-grid">
+        <div class="social-item"><div class="social-platform">Instagram</div>${escapeHtml(r.instagram)}</div>
+        <div class="social-item"><div class="social-platform">Facebook</div>${escapeHtml(r.facebook)}</div>
+        <div class="social-item"><div class="social-platform">LinkedIn</div>${escapeHtml(r.linkedin)}</div>
+      </div>`;
+    grid.appendChild(socialCard);
+
+    const results = document.getElementById('results');
+    results.style.display = 'block';
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function addCard(grid, label, content) {
+    const card = document.createElement('div');
+    card.className = 'output-card';
+    card.innerHTML = `
+      <div class="output-card-header"><div class="label">${label}</div><button class="copy-btn" onclick="copyText('${escapeAttr(content)}',this)">Copy</button></div>
+      <div class="output-body">${escapeHtml(content)}</div>`;
+    grid.appendChild(card);
+  }
+
+  function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!'; btn.style.color = 'var(--gold)';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    });
+  }
+
+  function showError(msg) { const e = document.getElementById('errorMsg'); e.textContent = msg; e.style.display = 'block'; }
+  function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeAttr(s) { return String(s).replace(/'/g,"\\'").replace(/\n/g,'\\n'); }
+</script>
+</body>
+</html>
